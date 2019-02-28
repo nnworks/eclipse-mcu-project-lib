@@ -8,4 +8,4 @@
  * in the user manual at https://docs.gradle.org/5.2/userguide/multi_project_builds.html
  */
 
-rootProject.name = "java-streams-toolkit"
+rootProject.name = "mcu-project-lib"
