@@ -1,4 +1,4 @@
-package fileretriever;
+package mcu.project.fileretriever;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * response. See
  * http://confluence.atlassian.com/display/JIRA/Connecting+to+SSL+services
  */
-public class HttpFileRetriever {
+public class NnHttpClient {
 
   protected HttpClient httpClient;
   protected ForkJoinPool threadPool;
@@ -39,11 +39,11 @@ public class HttpFileRetriever {
    *
    * @param proxy
    */
-  public HttpFileRetriever(final InetSocketAddress proxy) {
+  public NnHttpClient(final Proxy proxy) {
 
     try {
-      URI uri = new URI("ftps://speedtest.tele2.net/1MB.zip");
-      URLConnection con = uri.toURL().openConnection(new Proxy(Proxy.Type.HTTP, proxy));
+      URI uri = new URI("http://speedtest.tele2.net/1MB.zip");
+      URLConnection con = uri.toURL().openConnection(proxy);
       con.connect();
       con.getContentType();
       con.getInputStream().available();
@@ -55,14 +55,13 @@ public class HttpFileRetriever {
       e.printStackTrace();
     }
 
-
     threadPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
-    Builder clientBuilder = HttpClient.newBuilder().version(Version.HTTP_2).followRedirects(Redirect.NORMAL)
-        .connectTimeout(Duration.ofSeconds(20)).executor(threadPool);
+    Builder clientBuilder = HttpClient.newBuilder().version(Version.HTTP_2).followRedirects(Redirect.NORMAL).connectTimeout(Duration.ofSeconds(20)).executor(threadPool);
 
     if (proxy != null) {
-      clientBuilder.proxy(ProxySelector.of(proxy));
+      InetSocketAddress address = (InetSocketAddress)proxy.address();
+      clientBuilder.proxy(ProxySelector.of(address));
     } else {
       clientBuilder.proxy(ProxySelector.getDefault());
     }
@@ -75,26 +74,22 @@ public class HttpFileRetriever {
    *
    * @param uri
    * @return a String containing the response pay-load
-   * @throws HttpClientException
+   * @throws NnHttpClientException
    */
-  public String getUri(final String uri) throws HttpClientException {
+  public String getUri(final String uri) throws NnHttpClientException {
     try {
-      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).timeout(Duration.ofMinutes(1))
-          .header("Content-Type", "application/json").GET().build();
+      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).timeout(Duration.ofMinutes(1)).header("Content-Type", "application/json").GET().build();
       HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
-
       return response.body();
-
     } catch (Exception e) {
-      throw new HttpClientException(String.format("Call for URI %s failed.", uri), e);
+      throw new NnHttpClientException(String.format("Call for URI %s failed.", uri), e);
     }
   }
 
-  public Map<String, String> getUris(final List<String> uris) throws HttpClientException {
+  public Map<String, String> getUris(final List<String> uris) throws NnHttpClientException {
     List<CompletableFuture<?>> getUriFutures = uris.stream().map((s) -> getUriFuture(s)).collect(Collectors.toList());
 
-    CompletableFuture<Void> getUriFuturesCombined = CompletableFuture
-        .allOf(getUriFutures.toArray(new CompletableFuture<?>[getUriFutures.size()]));
+    CompletableFuture<Void> getUriFuturesCombined = CompletableFuture.allOf(getUriFutures.toArray(new CompletableFuture<?>[getUriFutures.size()]));
 
     CompletableFuture<List<?>> getUriFuturesCombinedJoined = getUriFuturesCombined.thenApply(nullValue -> {
       return getUriFutures.stream().map((cf) -> cf.handle((a, b) -> {
@@ -115,24 +110,9 @@ public class HttpFileRetriever {
     return null;
   }
 
-  private static class Response {
-    Response(Throwable throwable, HttpResponse<InputStream> response) {
-      this.throwable = throwable;
-      this.response = response;
-    }
-
-    protected Throwable throwable;
-    protected HttpResponse<InputStream> response;
-  }
-
-  private static CompletableFuture<Response> handleClientFuture(HttpResponse<InputStream> responseStream, Throwable t) {
-    return CompletableFuture.completedFuture(new Response(t, responseStream));
-  }
-
   private CompletableFuture<HttpResponse<InputStream>> getUriFuture(final String uri) {
     try {
-      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).timeout(Duration.ofMinutes(1))
-          .header("Content-Type", "application/json").GET().build();
+      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(uri)).timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json").GET().build();
       CompletableFuture<HttpResponse<InputStream>> future = httpClient.sendAsync(request, BodyHandlers.ofInputStream());
       return future;
     } catch (IllegalArgumentException e) {

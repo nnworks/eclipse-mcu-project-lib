@@ -1,6 +1,6 @@
 /**
  *
  */
-module nl.nnworks.mcu.project {
+module nl.nnworks.mcu.project.lib {
     requires java.net.http;
 }
