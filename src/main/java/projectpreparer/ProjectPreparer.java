@@ -1,5 +1,7 @@
 package projectpreparer;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,9 @@ public class ProjectPreparer {
         //new TestStreams().start();
 
     // System.out.println(new NnHttpClient(ProxyFactory.instance.createProxy(Proxy.Type.HTTP)).getUri("https://github.com/nnworks/web-component/archive/master.zip"));
-    System.out.println(new NnHttpClient(ProxyFactory.instance.createProxy(Proxy.Type.HTTP)).getUris(List.of("https://github.com/nnworks/web-component/archive/madster.zip")));
+    //InputStream is = new NnHttpClient(ProxyFactory.instance.createProxy(Proxy.Type.HTTP)).getUri("https://github.com/nnworks/web-component/archive/master.zip");
+    System.out.println(new NnHttpClient(ProxyFactory.instance.createProxy(Proxy.Type.HTTP)).getUris(List.of(
+        "http://speedtest.tele2.net/1MB.zip",
+        "https://github.com/nnworks/web-component/archive/master.zip")));
   }
 }

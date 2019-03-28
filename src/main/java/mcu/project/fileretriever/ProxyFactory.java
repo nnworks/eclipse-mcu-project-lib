@@ -48,7 +48,7 @@ public class ProxyFactory {
 
   public Proxy createProxy(final String host, final int port, Proxy.Type type) {
 
-    final String proxyKey = host + ":" + port + "/" + type.name();
+    final String proxyKey = String.format("%s:%d/%s.", host, port, type.name());
 
     // cached?
     if (proxies.containsKey(proxyKey)) {
